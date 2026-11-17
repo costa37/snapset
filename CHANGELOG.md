@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1
+
+- Add Wide centered: two-thirds of the usable display width, centered, with full usable height.
+- Use Wide centered as the default for unsaved windows and new rules, preserving explicitly saved placements.
+- Label connected displays Main, Extended, or Mirrored using the system display configuration.
+
 ## 0.2.0
 
 - Rename Window Harbor to SnapSet.

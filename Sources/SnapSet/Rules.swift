@@ -23,7 +23,7 @@ struct Rule: Codable, Identifiable {
     var bundleID: String
     var displayID: String
     var displayName: String
-    var placement: Placement = .almost
+    var placement: Placement = .wide
     var matchKind: MatchKind = .title
     var matchValue = ""
 

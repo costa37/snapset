@@ -2,6 +2,11 @@ import AppKit
 import ApplicationServices
 import SwiftUI
 
+func displayRole(isMain: Bool, isMirrored: Bool) -> String {
+    if isMain { return isMirrored ? "Main (Mirrored)" : "Main" }
+    return isMirrored ? "Mirrored" : "Extended"
+}
+
 struct Display: Identifiable {
     let id: String
     let name: String
@@ -11,7 +16,8 @@ struct Display: Identifiable {
             guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
                   let uuid = CGDisplayCreateUUIDFromDisplayID(number.uint32Value)?.takeRetainedValue() else { return nil }
             let id = CFUUIDCreateString(nil, uuid)! as String
-            return Display(id: id, name: "\(screen.localizedName) · \(Int(screen.frame.width))×\(Int(screen.frame.height)) · \(id.suffix(4))", area: screen.visibleFrame)
+            let role = displayRole(isMain: CGDisplayIsMain(number.uint32Value) != 0, isMirrored: CGDisplayIsInMirrorSet(number.uint32Value) != 0)
+            return Display(id: id, name: "\(role) · \(screen.localizedName) · \(Int(screen.frame.width))×\(Int(screen.frame.height)) · \(id.suffix(4))", area: screen.visibleFrame)
         }
     }
 }

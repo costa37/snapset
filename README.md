@@ -2,11 +2,11 @@
 
 Put each window back where it belongs. A native Apple silicon macOS app with a table of open windows, saved display/placement rules, a menu-bar action, and automatic restoration after monitors reconnect.
 
-**macOS 13+ · Apple silicon · Version 0.2.0**
+**macOS 13+ · Apple silicon · Version 0.2.1**
 
 ## Install
 
-1. Download `SnapSet-0.2.0-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
+1. Download `SnapSet-0.2.1-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
 2. Unzip and move **SnapSet.app** into Applications, then open it.
 3. This personal build is ad-hoc signed and not Apple-notarized. If macOS blocks it, review System Settings → Privacy & Security and use **Open Anyway** only if you trust the download. Managed Macs may prohibit it.
 4. Click **Enable access…** and enable SnapSet in Privacy & Security → Accessibility. Return to SnapSet and click **Refresh windows**. If needed, quit and reopen the app.
@@ -17,7 +17,9 @@ The **Open windows** table lists standard windows exposed by running apps throug
 
 For each window, choose a **destination display**, **placement**, then **Save**. Saving does not move the window. Click **Apply layout** to apply all enabled rules. The menu-bar action works even when the settings window is closed; Command–Return applies while settings is focused.
 
-Available placements: almost maximized (12-point margin), maximized within the desktop, half width centered, left half, right half, and compact centered (60% width / 70% height). The Dock/menu bar are excluded. Maximizing does not enter macOS full-screen mode.
+The default for unsaved windows and new rules is **Wide centered**: two-thirds width, horizontally centered, and full usable desktop height. Existing saved placements remain as configured.
+
+Available placements: Wide centered, almost maximized (12-point margin), maximized within the desktop, half width centered, left half, right half, and compact centered (60% width / 70% height). The Dock/menu bar are excluded. Maximizing does not enter macOS full-screen mode.
 
 Automatic restoration after display changes or wake is enabled by default, with a two-second settling delay. Application-focus activation is optional and starts off. Missing displays are skipped. Apps must be running; minimized and full-screen windows are not moved.
 
@@ -39,6 +41,8 @@ Window order and transient window numbers are not persistent identities. If a ru
 Rules, application bundle IDs, document URLs/title patterns, display UUIDs, placements, and trigger preferences are saved as readable JSON using atomic writes. **Show configuration file** reveals it in Finder. The app loads it at launch; quit SnapSet before editing or restoring a backup. App updates do not replace this folder. Configuration is local to each Mac; there is no cloud sync or telemetry. It is not encrypted, and window titles/document paths can contain personal information.
 
 If no SnapSet configuration exists, it imports the older `WindowHarbor/layout.json` without changing that file. Earlier all-window rules are preserved; old single-window rules are disabled until a specific match is configured. Invalid or newer-format configuration files are preserved and saving is blocked with a visible error.
+
+Display choices begin with **Main**, **Extended**, or **Mirrored**, based on macOS display configuration (not which display currently has keyboard focus).
 
 Display UUIDs survive ordinary reconnections, but some dock/adapter changes can change the identity reported by macOS. Re-select the display in that case. The app may constrain its own size or reject window control; results appear below the table. Spaces and Stage Manager can affect window availability. SnapSet does not switch Spaces.
 

@@ -13,6 +13,11 @@ struct LayoutTests {
     func testPresetsStayInUsableScreenArea() {
         for area in [CGRect(x: -1920, y: 40, width: 1920, height: 1040), CGRect(x: 0, y: -900, width: 1440, height: 875)] {
             for placement in Placement.allCases { XCTAssertTrue(area.contains(placement.rect(in: area))) }
+            let wide = Placement.wide.rect(in: area)
+            XCTAssertTrue(abs(wide.midX - area.midX) < 0.001)
+            XCTAssertEqual(wide.minY, area.minY)
+            XCTAssertEqual(wide.height, area.height)
+            XCTAssertTrue(abs(wide.width / area.width - 2.0 / 3.0) < 0.001)
             let left = Placement.left.rect(in: area), right = Placement.right.rect(in: area)
             XCTAssertEqual(left.width, right.width)
             XCTAssertEqual(right.minX - left.maxX, 12)
@@ -34,6 +39,11 @@ tests.testCoordinateConversionAcrossDisplayArrangements()
 tests.testPresetsStayInUsableScreenArea()
 try tests.testSavedRulesRoundTrip()
 try testMatchingAndMigration()
+XCTAssertEqual(Rule(appName: "Test", bundleID: "test", displayID: "screen", displayName: "Screen").placement, .wide)
+XCTAssertEqual(displayRole(isMain: true, isMirrored: false), "Main")
+XCTAssertEqual(displayRole(isMain: false, isMirrored: false), "Extended")
+XCTAssertEqual(displayRole(isMain: false, isMirrored: true), "Mirrored")
+XCTAssertEqual(displayRole(isMain: true, isMirrored: true), "Main (Mirrored)")
 print("Passed: coordinates, presets, persistence, matching, conflicts, migration.")
 } }
 

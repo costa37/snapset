@@ -147,7 +147,7 @@ struct LiveWindowControls: View {
     @ObservedObject var manager: WindowManager
     let window: LiveWindow
     @ViewState<String> private var displayID = ""
-    @ViewState<Placement> private var placement: Placement = .almost
+    @ViewState<Placement> private var placement: Placement = .wide
     var body: some View {
         HStack(spacing: 10) {
             Picker("Display", selection: $displayID) {
@@ -170,7 +170,7 @@ struct LiveWindowControls: View {
     private func load() {
         let saved = manager.rule(for: window)
         displayID = saved?.displayID ?? manager.currentDisplay(for: window)
-        placement = saved?.placement ?? .almost
+        placement = saved?.placement ?? .wide
     }
 }
 
