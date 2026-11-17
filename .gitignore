@@ -1,0 +1,9 @@
+.build/
+dist/
+.DS_Store
+Signing/
+*.p12
+*.pfx
+*.pem
+.env
+__pycache__/
