@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.2
+
+- Add the selected Center Stage app icon: a blue tile with a white monitor and cyan centered window.
+- Bundle native macOS icon sizes for Finder, Dock, and application switching.
+
 ## 0.2.1
 
 - Add Wide centered: two-thirds of the usable display width, centered, with full usable height.

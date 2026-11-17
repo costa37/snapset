@@ -14,6 +14,7 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$APP/Contents/Frameworks"
 ditto "$FRAMEWORK/Sparkle.framework" "$APP/Contents/Frameworks/Sparkle.framework"
 cp "$SPARKLE/LICENSE" "$APP/Contents/Resources/Sparkle-LICENSE.txt"
+cp Assets/SnapSet.icns "$APP/Contents/Resources/SnapSet.icns"
 flags=(-O)
 if [ "${CONFIGURATION:-release}" = debug ]; then flags=(-Onone -g); fi
 swiftc "${flags[@]}" -parse-as-library -target arm64-apple-macos13.0 -module-cache-path "$CLANG_MODULE_CACHE_PATH" \
