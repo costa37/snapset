@@ -2,11 +2,11 @@
 
 Put each window back where it belongs. A native Apple silicon macOS app with a table of open windows, saved display/placement rules, a menu-bar action, and automatic restoration after monitors reconnect.
 
-**macOS 13+ · Apple silicon · Version 0.3.0**
+**macOS 13+ · Apple silicon · Version 0.3.1**
 
 ## Install
 
-1. Download `SnapSet-0.3.0-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
+1. Download `SnapSet-0.3.1-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
 2. Unzip and move **SnapSet.app** into Applications, then open it.
 3. This personal build is ad-hoc signed and not Apple-notarized. If macOS blocks it, review System Settings → Privacy & Security and use **Open Anyway** only if you trust the download. Managed Macs may prohibit it.
 4. Click **Enable access…** and enable SnapSet in Privacy & Security → Accessibility. Return to SnapSet and click **Refresh windows**. If needed, quit and reopen the app.
@@ -51,7 +51,7 @@ Display UUIDs survive ordinary reconnections, but some dock/adapter changes can 
 
 ## Menu bar and login
 
-SnapSet is a menu-bar utility: its right-side icon opens the controls and **Open SnapSet…** brings up the settings window. It has no separate left-side application menu, Dock icon, or Command–Tab entry. The macOS menu bar itself remains available for other apps.
+SnapSet is a menu-bar utility: **left-click** its right-side icon to open and activate the settings window; **right-click** the icon for its menu. Clicking again keeps the window open and brings it forward. A closed or minimized settings window is reopened/restored. It has no separate left-side application menu, Dock icon, or Command–Tab entry. The macOS menu bar itself remains available for other apps.
 
 **Launch at login** is checked by default in the icon's menu. On the first launch from `/Applications` or `~/Applications`, SnapSet registers with macOS using `SMAppService`. The development/build copy shows an installation hint and does not register its temporary location. Unchecking disables login launch, and the preference is remembered. If macOS requires approval or registration fails, the menu shows the status and offers **Open Login Items…**. Changes made in System Settings are respected. Actual login startup still requires a logout/login check after installation; automated builds do not validate that OS flow.
 

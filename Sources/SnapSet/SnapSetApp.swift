@@ -20,40 +20,8 @@ final class Updates: ObservableObject {
 
 @main
 struct SnapSetApp: App {
-    @StateObject private var manager = WindowManager()
-    @StateObject private var updates = Updates()
-    @StateObject private var login = LoginLaunch()
-    var body: some Scene {
-        Window("SnapSet", id: "layout") {
-            LayoutView(manager: manager, updates: updates).frame(minWidth: 1000, minHeight: 640)
-        }.defaultSize(width: 1180, height: 760)
-        MenuBarExtra("SnapSet", systemImage: "rectangle.3.group") {
-            MenuContent(login: login, manager: manager, updates: updates)
-        }
-    }
-}
-
-struct MenuContent: View {
-    @ObservedObject var login: LoginLaunch
-    @ObservedObject var manager: WindowManager
-    @ObservedObject var updates: Updates
-    @Environment(\.openWindow) private var openWindow
-    var body: some View {
-        Button("Apply layout") { manager.apply() }.disabled(manager.busy)
-        Button("Open SnapSet…") { openWindow(id: "layout"); NSApp.activate(ignoringOtherApps: true) }
-        Divider()
-        Toggle("Launch at login", isOn: Binding(get: { login.requested }, set: { login.setEnabled($0) }))
-        if !login.message.isEmpty {
-            Text(login.message)
-            Button("Open Login Items…") { login.openSettings() }
-        }
-        Toggle("Apply after display changes", isOn: $manager.configuration.onReconnect)
-        Divider()
-        Button("Check for Updates…") { updates.check() }.disabled(!updates.canCheck)
-        Button("Quit SnapSet") { NSApp.terminate(nil) }.keyboardShortcut("q")
-        Text("Default: Main display · Wide centered")
-            .onAppear { login.refresh() }
-    }
+    @NSApplicationDelegateAdaptor(SnapSetDelegate.self) private var delegate
+    var body: some Scene { Settings { EmptyView() } }
 }
 
 struct LayoutView: View {

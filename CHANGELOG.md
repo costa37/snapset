@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.1
+
+- Left-click the menu-bar icon to open and activate SnapSet, including restoring a closed or minimized settings window.
+- Right-click the icon to open its menu, keeping layout, login, update, and Quit controls available.
+- Retain one settings window and preserve its position and size.
+
 ## 0.3.0
 
 - Apply Main display + Wide centered to windows without a saved exception; no individual Save is required.
