@@ -2,13 +2,13 @@ import Foundation
 import CoreGraphics
 
 enum Placement: String, Codable, CaseIterable, Identifiable {
-    case wide = "Wide centered"
-    case almost = "Almost maximized"
     case maximize = "Maximized (within desktop)"
+    case wide = "Wide centered"
     case center = "Half width, centered"
-    case left = "Left half"
     case right = "Right half"
+    case left = "Left half"
     case compact = "Compact, centered"
+    case almost = "Almost maximized"
     var id: String { rawValue }
 
     func rect(in area: CGRect) -> CGRect {

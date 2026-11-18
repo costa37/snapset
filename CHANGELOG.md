@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.5
+
+- Reorder the placement menu with Maximized first and Almost maximized last.
+
 ## 0.3.4
 
 - Updated the filter placeholder to ‘Filter apps (press "/" to focus)’.
