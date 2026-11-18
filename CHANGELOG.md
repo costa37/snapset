@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Add an app-name search box shared by Open windows and Saved rules.
+- Match any part of the name, ignoring case and surrounding whitespace; show only matching apps.
+- Show filtered counts, a clear-search control, and an empty-result message. Searching does not modify saved rules or the scope of Apply layout.
+
 ## 0.3.1
 
 - Left-click the menu-bar icon to open and activate SnapSet, including restoring a closed or minimized settings window.

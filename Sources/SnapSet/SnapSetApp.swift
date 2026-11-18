@@ -28,6 +28,23 @@ struct LayoutView: View {
     @ObservedObject var manager: WindowManager
     @ObservedObject var updates: Updates
     @ViewState<Int> private var selectedTab = 0
+    @ViewState<String> private var appSearch = ""
+    private var searchTerm: String { appSearch.trimmingCharacters(in: .whitespacesAndNewlines) }
+    private func matchesApp(_ name: String) -> Bool {
+        searchTerm.isEmpty || name.localizedCaseInsensitiveContains(searchTerm)
+    }
+    private var filteredWindows: [LiveWindow] { manager.windows.filter { matchesApp($0.appName) } }
+    private var matchingRuleCount: Int { manager.configuration.rules.filter { matchesApp($0.appName) }.count }
+    private func countLabel(_ matches: Int, total: Int) -> String {
+        searchTerm.isEmpty ? "\(total)" : "\(matches)/\(total)"
+    }
+    private var noSearchResults: some View {
+        VStack(spacing: 10) {
+            Image(systemName: "magnifyingglass").font(.system(size: 32)).foregroundStyle(.secondary)
+            Text("No apps match “\(searchTerm)”").font(.title3)
+            Button("Clear search") { appSearch = "" }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
@@ -45,6 +62,7 @@ struct LayoutView: View {
                 Button("Apply layout") { manager.apply() }
                     .buttonStyle(.borderedProminent).keyboardShortcut(.return, modifiers: [.command])
                     .disabled(manager.busy || manager.storageError != nil)
+                    .help("Applies the complete layout, including apps hidden by search.")
             }
             if !manager.trusted {
                 HStack {
@@ -57,6 +75,16 @@ struct LayoutView: View {
             if let error = manager.storageError {
                 Text(error).foregroundStyle(.red).textSelection(.enabled)
             }
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
+                TextField("Search apps by any part of their name…", text: $appSearch)
+                    .textFieldStyle(.plain)
+                    .accessibilityLabel("Search apps")
+                if !appSearch.isEmpty {
+                    Button { appSearch = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+                        .buttonStyle(.plain).help("Clear search").accessibilityLabel("Clear search")
+                }
+            }.padding(10).background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 8))
             TabView(selection: $selectedTab) {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Default: Main display + Wide centered—no Save needed. Save only exceptions. Layout applies when SnapSet opens or apps launch; use Apply layout to restore it now.")
@@ -67,8 +95,10 @@ struct LayoutView: View {
                             Text(manager.trusted ? "No standard windows found" : "Your open windows will appear here").font(.title2)
                             Text(manager.trusted ? "Open an application window and click Refresh windows." : "Enable Accessibility access, then refresh the list.").foregroundStyle(.secondary)
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if filteredWindows.isEmpty {
+                        noSearchResults
                     } else {
-                        Table(manager.windows) {
+                        Table(filteredWindows) {
                             TableColumn("Application / window") { window in
                                 VStack(alignment: .leading, spacing: 3) {
                                     Text(window.appName).fontWeight(.semibold)
@@ -82,24 +112,29 @@ struct LayoutView: View {
                         }
                     }
                     Text(manager.scanStatus).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
-                }.padding(12).tabItem { Text("Open windows (\(manager.windows.count))") }.tag(0)
+                }.padding(12).tabItem { Text("Open windows (\(countLabel(filteredWindows.count, total: manager.windows.count)))") }.tag(0)
                 VStack(alignment: .leading, spacing: 10) {
                     Text("One rule per window, or explicitly all windows of an app. Disabled rules leave matching windows alone. Ambiguous matches and overlapping rules are skipped. All-app rules use the same rectangle for every window.")
                         .font(.callout).foregroundStyle(.secondary)
                     if manager.configuration.rules.isEmpty {
                         Text("No exceptions saved. All eligible windows use Main display + Wide centered.")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
+                    } else if matchingRuleCount == 0 {
+                        noSearchResults
                     } else {
                         ScrollView {
                             LazyVStack(spacing: 10) {
                                 ForEach($manager.configuration.rules) { $rule in
-                                    SavedRuleRow(rule: $rule, displays: manager.displays,
-                                        clearBinding: { manager.clearBinding(rule.id) }, remove: { manager.remove(rule.id) })
+                                    // Keep bindings attached to the original rule collection.
+                                    if matchesApp(rule.appName) {
+                                        SavedRuleRow(rule: $rule, displays: manager.displays,
+                                            clearBinding: { manager.clearBinding(rule.id) }, remove: { manager.remove(rule.id) })
+                                    }
                                 }
                             }
                         }
                     }
-                }.padding(12).disabled(manager.busy || manager.storageError != nil).tabItem { Text("Saved rules (\(manager.configuration.rules.count))") }.tag(1)
+                }.padding(12).disabled(manager.busy || manager.storageError != nil).tabItem { Text("Saved rules (\(countLabel(matchingRuleCount, total: manager.configuration.rules.count)))") }.tag(1)
             }
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 7) {

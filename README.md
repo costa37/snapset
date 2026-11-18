@@ -2,11 +2,11 @@
 
 Put each window back where it belongs. A native Apple silicon macOS app with a table of open windows, saved display/placement rules, a menu-bar action, and automatic restoration after monitors reconnect.
 
-**macOS 13+ · Apple silicon · Version 0.3.1**
+**macOS 13+ · Apple silicon · Version 0.3.2**
 
 ## Install
 
-1. Download `SnapSet-0.3.1-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
+1. Download `SnapSet-0.3.2-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
 2. Unzip and move **SnapSet.app** into Applications, then open it.
 3. This personal build is ad-hoc signed and not Apple-notarized. If macOS blocks it, review System Settings → Privacy & Security and use **Open Anyway** only if you trust the download. Managed Macs may prohibit it.
 4. Click **Enable access…** and enable SnapSet in Privacy & Security → Accessibility. Return to SnapSet and click **Refresh windows**. If needed, quit and reopen the app.
@@ -24,6 +24,10 @@ The default for unsaved windows and new rules is **Main display + Wide centered*
 Available placements: Wide centered, almost maximized (12-point margin), maximized within the desktop, half width centered, left half, right half, and compact centered (60% width / 70% height). The Dock/menu bar are excluded. Maximizing does not enter macOS full-screen mode.
 
 Automatic restoration after display changes or wake is enabled by default, with a two-second settling delay. Application-focus activation is optional and starts off. Missing displays are skipped. Apps must be running; minimized and full-screen windows are not moved.
+
+## Find an app
+
+Use **Search apps** above the tabs to filter Open windows and Saved rules by app name. Any part of the name matches, ignoring case: `hrom` finds Google Chrome, and `LEND` finds Calendar. Clear the search to restore the full list. Counts show matches/total while searching. Save/Update still edits the selected window's rule; searching never deletes or disables hidden rules. **Apply layout** continues to apply the complete layout.
 
 ## Multiple windows from one app
 
