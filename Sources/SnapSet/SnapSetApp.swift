@@ -55,7 +55,11 @@ struct LayoutView: View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("SnapSet").font(.largeTitle.bold())
+                    HStack(alignment: .firstTextBaseline, spacing: 8) {
+                        Text("SnapSet").font(.largeTitle.bold())
+                        Text("v\(Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—")")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
                     Text("Every window, in its place.").foregroundStyle(.secondary)
                 }
                 Spacer()

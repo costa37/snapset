@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.3
+
+- Show the installed app version in small, secondary text beside the SnapSet heading.
+- Read the version from app metadata so the label stays correct after updates.
+
 ## 0.2.2
 
 - Add the selected Center Stage app icon: a blue tile with a white monitor and cyan centered window.
