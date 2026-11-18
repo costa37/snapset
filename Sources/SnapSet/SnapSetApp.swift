@@ -79,7 +79,7 @@ struct LayoutView: View {
             }
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("/ to filter apps", text: $appSearch)
+                TextField(#"Filter apps (press "/" to focus)"#, text: $appSearch)
                     .textFieldStyle(.plain)
                     .accessibilityLabel("Search apps")
                     .focused($searchFocused)

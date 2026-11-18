@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.4
+
+- Updated the filter placeholder to ‘Filter apps (press "/" to focus)’.
+
 ## 0.3.3
 
 - Press / in the SnapSet settings window to focus app search; the shortcut is shown in the search placeholder.
