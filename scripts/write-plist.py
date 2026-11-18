@@ -8,7 +8,7 @@ key = (root / 'updates/public-key.txt').read_text().strip()
 assert len(base64.b64decode(key, validate=True)) == 32
 info = dict(CFBundleIdentifier='local.snapset.app', CFBundleName='SnapSet', CFBundleDisplayName='SnapSet',
     CFBundleExecutable='SnapSet', CFBundleIconFile='SnapSet', CFBundlePackageType='APPL', CFBundleShortVersionString=version['version'],
-    CFBundleVersion=str(version['build']), LSMinimumSystemVersion='13.0', NSHighResolutionCapable=True,
+    CFBundleVersion=str(version['build']), LSMinimumSystemVersion='13.0', NSHighResolutionCapable=True, LSUIElement=True,
     SUFeedURL='https://github.com/costa37/snapset/releases/latest/download/appcast.xml', SUPublicEDKey=key,
     SUAllowsAutomaticUpdates=False, SUEnableAutomaticChecks=True, SUEnableSystemProfiling=False,
     SUVerifyUpdateBeforeExtraction=True)

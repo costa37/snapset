@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0
+
+- Apply Main display + Wide centered to windows without a saved exception; no individual Save is required.
+- Apply layouts on SnapSet startup and shortly after applications launch, as well as existing manual/reconnection triggers.
+- Support saved Main display targets that follow changes to the macOS main display.
+- Keep disabled, ambiguous, conflicting, and disconnected-display rules from being overridden by the fallback.
+- Add Launch at login, requested by default and registered when running from Applications, with visible approval/error status.
+- Run as a menu-bar utility without a separate Dock icon or left-side application menu; settings remain available from the menu-bar icon.
+
 ## 0.2.3
 
 - Show the installed app version in small, secondary text beside the SnapSet heading.

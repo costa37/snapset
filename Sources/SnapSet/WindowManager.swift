@@ -11,13 +11,15 @@ struct Display: Identifiable {
     let id: String
     let name: String
     let area: CGRect
+    let isMain: Bool
+    static let mainTarget = "@main"
     static func connected() -> [Display] {
         NSScreen.screens.compactMap { screen in
             guard let number = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber,
                   let uuid = CGDisplayCreateUUIDFromDisplayID(number.uint32Value)?.takeRetainedValue() else { return nil }
             let id = CFUUIDCreateString(nil, uuid)! as String
             let role = displayRole(isMain: CGDisplayIsMain(number.uint32Value) != 0, isMirrored: CGDisplayIsInMirrorSet(number.uint32Value) != 0)
-            return Display(id: id, name: "\(role) · \(screen.localizedName) · \(Int(screen.frame.width))×\(Int(screen.frame.height)) · \(id.suffix(4))", area: screen.visibleFrame)
+            return Display(id: id, name: "\(role) · \(screen.localizedName) · \(Int(screen.frame.width))×\(Int(screen.frame.height)) · \(id.suffix(4))", area: screen.visibleFrame, isMain: CGDisplayIsMain(number.uint32Value) != 0)
         }
     }
 }
@@ -98,7 +100,7 @@ final class WindowManager: ObservableObject {
     @Published var configuration = Configuration() { didSet { save() } }
     @Published var displays: [Display] = []
     @Published var windows: [LiveWindow] = []
-    @Published var status = "Refresh open windows, choose a display and placement, then save a rule."
+    @Published var status = "Default: Main display + Wide centered. Save rules only for exceptions."
     @Published var scanStatus = ""
     @Published var trusted = AXIsProcessTrusted()
     @Published var busy = false
@@ -106,6 +108,8 @@ final class WindowManager: ObservableObject {
     private var observers: [NSObjectProtocol] = []
     private var reconnectWork: DispatchWorkItem?
     private var pendingApply = false
+    private var pendingBundles = Set<String>()
+    private var startupPending = true
     private var sessionBindings: [UUID: AXUIElement] = [:]
     private let queue = DispatchQueue(label: "SnapSet.accessibility", qos: .userInitiated)
     let file: URL
@@ -133,12 +137,18 @@ final class WindowManager: ObservableObject {
         observers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification, object: nil, queue: .main) { [weak self] note in
             guard let self, self.configuration.onActivation,
                   let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                  let id = app.bundleIdentifier, id != Bundle.main.bundleIdentifier,
-                  self.configuration.rules.contains(where: { $0.enabled && $0.bundleID == id }) else { return }
+                  let id = app.bundleIdentifier, id != Bundle.main.bundleIdentifier else { return }
             self.apply(bundleID: id)
         })
         observers.append(NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { [weak self] _ in self?.refresh() })
-        refresh()
+        // Login restoration may start applications after SnapSet itself.
+        observers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didLaunchApplicationNotification, object: nil, queue: .main) { [weak self] note in
+            guard let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
+                  app.activationPolicy != .prohibited, let id = app.bundleIdentifier,
+                  id != Bundle.main.bundleIdentifier else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.apply(bundleID: id) }
+        })
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.refresh() }
     }
 
     private func save() {
@@ -181,7 +191,13 @@ final class WindowManager: ObservableObject {
     func refresh() {
         trusted = AXIsProcessTrusted()
         displays = Display.connected()
-        guard trusted, !busy else { return }
+        guard trusted else { return }
+        if startupPending {
+            startupPending = false
+            apply()
+            return
+        }
+        guard !busy else { return }
         busy = true
         let applications = apps()
         queue.async {
@@ -193,16 +209,14 @@ final class WindowManager: ObservableObject {
     }
     private func finish() {
         busy = false
-        if pendingApply { pendingApply = false; apply() }
-    }
-    func currentDisplay(for window: LiveWindow) -> String {
-        guard let frame = window.frame else { return displays.first?.id ?? "" }
-        let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
-        return displays.max(by: { a, b in
-            let ar = accessibilityRect(a.area, primaryHeight: primaryHeight).intersection(frame)
-            let br = accessibilityRect(b.area, primaryHeight: primaryHeight).intersection(frame)
-            return (ar.isNull ? 0 : ar.width * ar.height) < (br.isNull ? 0 : br.width * br.height)
-        })?.id ?? ""
+        if pendingApply {
+            pendingApply = false
+            pendingBundles.removeAll()
+            apply()
+        } else if let bundle = pendingBundles.first {
+            pendingBundles.remove(bundle)
+            apply(bundleID: bundle)
+        }
     }
     func rule(for window: LiveWindow) -> Rule? {
         let matches = configuration.rules.filter { rule in
@@ -212,15 +226,19 @@ final class WindowManager: ObservableObject {
         return matches.count == 1 ? matches.first : nil
     }
     func saveWindow(_ window: LiveWindow, displayID: String, placement: Placement) {
-        guard storageError == nil, let display = displays.first(where: { $0.id == displayID }) else { return }
+        guard storageError == nil else { return }
+        let name: String
+        if displayID == Display.mainTarget { name = "Main display" }
+        else if let display = displays.first(where: { $0.id == displayID }) { name = display.name }
+        else { return }
         if var existing = rule(for: window), existing.matchKind != .all,
            let index = configuration.rules.firstIndex(where: { $0.id == existing.id }) {
-            existing.displayID = display.id; existing.displayName = display.name; existing.placement = placement
+            existing.displayID = displayID; existing.displayName = name; existing.placement = placement
             configuration.rules[index] = existing
             sessionBindings[existing.id] = window.element
         } else {
             let document = window.identity.document
-            let rule = Rule(appName: window.appName, bundleID: window.identity.bundleID, displayID: display.id, displayName: display.name,
+            let rule = Rule(appName: window.appName, bundleID: window.identity.bundleID, displayID: displayID, displayName: name,
                 placement: placement, matchKind: document.isEmpty ? .title : .document, matchValue: document.isEmpty ? window.identity.title : document)
             configuration.rules.append(rule)
             sessionBindings[rule.id] = window.element
@@ -236,11 +254,14 @@ final class WindowManager: ObservableObject {
         trusted = AXIsProcessTrusted()
         guard trusted else { status = "Enable Accessibility access to inspect and move windows."; return }
         guard storageError == nil else { return }
-        guard !busy else { pendingApply = true; return }
+        guard !busy else {
+            if let bundleID { pendingBundles.insert(bundleID) } else { pendingApply = true }
+            return
+        }
+        if bundleID == nil { startupPending = false }
         displays = Display.connected()
-        let rules = configuration.rules.filter { $0.enabled && (bundleID == nil || $0.bundleID == bundleID) }
-        guard !rules.isEmpty else { status = "No enabled rules to apply."; return }
-        let screens = displays, bindings = sessionBindings, applications = apps()
+        let rules = configuration.rules.filter { bundleID == nil || $0.bundleID == bundleID }
+        let screens = displays, bindings = sessionBindings, applications = apps().filter { bundleID == nil || $0.bundleIdentifier == bundleID }
         let primaryHeight = NSScreen.screens.first?.frame.height ?? 0
         busy = true; status = "Applying layout…"
         queue.async {
@@ -252,13 +273,23 @@ final class WindowManager: ObservableObject {
             for assignment in plan.assignments {
                 let rule = rules[assignment.ruleIndex], window = scan.windows[assignment.windowIndex]
                 if rule.matchKind != .all { rebound[rule.id] = window.element }
-                guard let display = screens.first(where: { $0.id == rule.displayID }) else {
+                guard let display = screens.first(where: { rule.displayID == Display.mainTarget ? $0.isMain : $0.id == rule.displayID }) else {
                     messages.append("\(rule.appName): intended display disconnected; skipped."); continue
                 }
                 messages.append(Accessibility.place(window, target: accessibilityRect(rule.placement.rect(in: display.area), primaryHeight: primaryHeight)))
             }
+            for index in plan.defaultWindowIndices {
+                let window = scan.windows[index]
+                guard let display = screens.first(where: \.isMain) else {
+                    messages.append("\(window.appName): main display unavailable; skipped.")
+                    continue
+                }
+                messages.append(Accessibility.place(window, target: accessibilityRect(Placement.wide.rect(in: display.area), primaryHeight: primaryHeight)))
+            }
+            if messages.isEmpty { messages.append("No eligible windows to place.") }
             DispatchQueue.main.async {
-                self.adopt(scan)
+                // A scoped apply must not replace the full table with one app's windows.
+                if bundleID == nil { self.adopt(scan) }
                 for (id, element) in rebound { self.sessionBindings[id] = element }
                 self.status = messages.joined(separator: "\n")
                 self.finish()

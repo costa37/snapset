@@ -53,18 +53,23 @@ struct Assignment {
 struct MatchPlan {
     var assignments: [Assignment] = []
     var messages: [String] = []
+    var defaultWindowIndices: [Int] = []
 }
 
 // Resolve all rules together: overlapping rules cannot race to move one window twice.
 func makePlan(rules: [Rule], windows: [WindowIdentity], bindings: [UUID: Int] = [:]) -> MatchPlan {
     var plan = MatchPlan()
-    for (ri, rule) in rules.enumerated() where rule.enabled {
+    var reserved = Set<Int>()
+    var excluded = Set<Int>()
+    for (ri, rule) in rules.enumerated() {
         let matches: [Int]
         if rule.matchKind != .all, let bound = bindings[rule.id], windows.indices.contains(bound), windows[bound].bundleID == rule.bundleID {
             matches = [bound]
         } else {
             matches = windows.indices.filter { rule.matches(windows[$0]) }
         }
+        reserved.formUnion(matches)
+        guard rule.enabled else { excluded.formUnion(matches); continue }
         if matches.isEmpty { plan.messages.append("\(rule.appName): no matching window."); continue }
         if rule.matchKind != .all && matches.count > 1 {
             plan.messages.append("\(rule.appName): ambiguous rule (\(matches.count) windows); skipped.")
@@ -77,6 +82,7 @@ func makePlan(rules: [Rule], windows: [WindowIdentity], bindings: [UUID: Int] = 
         let names = assignments.map { rules[$0.ruleIndex].appName }.joined(separator: ", ")
         plan.messages.append("Conflicting rules for \(names); that window was skipped.")
     }
-    plan.assignments.removeAll { conflicts[$0.windowIndex] != nil }
+    plan.assignments.removeAll { conflicts[$0.windowIndex] != nil || excluded.contains($0.windowIndex) }
+    plan.defaultWindowIndices = windows.indices.filter { !reserved.contains($0) }
     return plan
 }

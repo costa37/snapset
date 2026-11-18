@@ -39,6 +39,7 @@ tests.testCoordinateConversionAcrossDisplayArrangements()
 tests.testPresetsStayInUsableScreenArea()
 try tests.testSavedRulesRoundTrip()
 try testMatchingAndMigration()
+testDefaultCoverage()
 XCTAssertEqual(Rule(appName: "Test", bundleID: "test", displayID: "screen", displayName: "Screen").placement, .wide)
 XCTAssertEqual(displayRole(isMain: true, isMirrored: false), "Main")
 XCTAssertEqual(displayRole(isMain: false, isMirrored: false), "Extended")
@@ -68,7 +69,7 @@ func testMatchingAndMigration() throws {
     XCTAssertTrue(plan.messages.first!.contains("Conflicting"))
     a.enabled = false
     plan = makePlan(rules: [a,b], windows: windows)
-    XCTAssertEqual(plan.assignments.map(\.windowIndex), [1])
+    XCTAssertTrue(plan.assignments.isEmpty) // Disabled all-app rule explicitly excludes its windows.
     b.matchKind = .document; b.matchValue = "file:///work/report.txt"
     plan = makePlan(rules: [b], windows: [WindowIdentity(bundleID: "test.app", title: "Changed title", document: b.matchValue)])
     XCTAssertEqual(plan.assignments.count, 1)
@@ -79,4 +80,37 @@ func testMatchingAndMigration() throws {
     XCTAssertEqual(migrated.schemaVersion, 2)
     XCTAssertTrue(!migrated.rules[0].enabled)
     XCTAssertTrue(migrated.onReconnect)
+}
+
+func testDefaultCoverage() {
+    let windows = [WindowIdentity(bundleID: "app", title: "First", document: ""),
+                   WindowIdentity(bundleID: "app", title: "Second", document: ""),
+                   WindowIdentity(bundleID: "other", title: "First", document: "")]
+    XCTAssertEqual(makePlan(rules: [], windows: windows).defaultWindowIndices, [0,1,2])
+    var rule = Rule(appName: "App", bundleID: "app", displayID: "disconnected", displayName: "Missing", matchKind: .title, matchValue: "First")
+    var plan = makePlan(rules: [rule], windows: windows)
+    XCTAssertEqual(plan.assignments.map(\.windowIndex), [0])
+    XCTAssertEqual(plan.defaultWindowIndices, [1,2]) // Missing target is not replaced by fallback.
+    rule.enabled = false
+    plan = makePlan(rules: [rule], windows: windows)
+    XCTAssertTrue(plan.assignments.isEmpty)
+    XCTAssertEqual(plan.defaultWindowIndices, [1,2]) // Disabled match stays untouched.
+    rule.enabled = true; rule.matchKind = .contains; rule.matchValue = "s"
+    plan = makePlan(rules: [rule], windows: windows)
+    XCTAssertTrue(plan.assignments.isEmpty)
+    XCTAssertEqual(plan.defaultWindowIndices, [2]) // Both ambiguous windows are reserved.
+    rule.matchKind = .title; rule.matchValue = "First"
+    var second = rule; second.id = UUID()
+    plan = makePlan(rules: [rule,second], windows: windows)
+    XCTAssertTrue(plan.assignments.isEmpty)
+    XCTAssertEqual(plan.defaultWindowIndices, [1,2]) // Conflict is not replaced by fallback.
+    rule.matchValue = "Changed title"
+    plan = makePlan(rules: [rule], windows: windows, bindings: [rule.id: 0])
+    XCTAssertEqual(plan.assignments.map(\.windowIndex), [0])
+    XCTAssertEqual(plan.defaultWindowIndices, [1,2])
+    rule.enabled = false; rule.matchKind = .all
+    plan = makePlan(rules: [rule,second], windows: windows)
+    XCTAssertTrue(plan.assignments.isEmpty)
+    XCTAssertEqual(plan.defaultWindowIndices, [2]) // An exclusion also wins over another enabled rule.
+    XCTAssertEqual(Display.mainTarget, "@main")
 }

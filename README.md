@@ -2,11 +2,11 @@
 
 Put each window back where it belongs. A native Apple silicon macOS app with a table of open windows, saved display/placement rules, a menu-bar action, and automatic restoration after monitors reconnect.
 
-**macOS 13+ · Apple silicon · Version 0.2.3**
+**macOS 13+ · Apple silicon · Version 0.3.0**
 
 ## Install
 
-1. Download `SnapSet-0.2.3-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
+1. Download `SnapSet-0.3.0-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
 2. Unzip and move **SnapSet.app** into Applications, then open it.
 3. This personal build is ad-hoc signed and not Apple-notarized. If macOS blocks it, review System Settings → Privacy & Security and use **Open Anyway** only if you trust the download. Managed Macs may prohibit it.
 4. Click **Enable access…** and enable SnapSet in Privacy & Security → Accessibility. Return to SnapSet and click **Refresh windows**. If needed, quit and reopen the app.
@@ -15,9 +15,11 @@ Put each window back where it belongs. A native Apple silicon macOS app with a t
 
 The **Open windows** table lists standard windows exposed by running apps through macOS Accessibility, including minimized/full-screen windows marked as such. It refreshes when SnapSet becomes active or when you click Refresh windows. Dialogs, utility panels, and windows an app does not expose are not included. This is a list of windows, not individual browser tabs.
 
-For each window, choose a **destination display**, **placement**, then **Save**. Saving does not move the window. Click **Apply layout** to apply all enabled rules. The menu-bar action works even when the settings window is closed; Command–Return applies while settings is focused.
+**No setup is required for the default layout:** after Accessibility is granted, launching SnapSet places eligible windows on the current **Main display**, **Wide centered**. It applies again after display changes/wake and shortly after applications launch. Use **Apply layout** any time to restore all eligible windows. New windows created later by an already-running app are handled on the next apply/reconnect, or by the optional app-focus trigger.
 
-The default for unsaved windows and new rules is **Wide centered**: two-thirds width, horizontally centered, and full usable desktop height. Existing saved placements remain as configured.
+Save only exceptions: choose a **destination display**, **placement**, then **Save**. Saving does not immediately move the window. Existing saved rules keep their destinations/placements. Choose **Main display (follows system)** to have a saved rule follow whichever screen macOS currently marks as main. Disabled rules exclude their matching windows from all placement. Ambiguous/conflicting rules and disconnected targets are skipped, not replaced by the fallback. The menu-bar action works even when the settings window is closed; Command–Return applies while settings is focused.
+
+The default for unsaved windows and new rules is **Main display + Wide centered**: two-thirds width, horizontally centered, and full usable desktop height. Existing saved placements remain as configured.
 
 Available placements: Wide centered, almost maximized (12-point margin), maximized within the desktop, half width centered, left half, right half, and compact centered (60% width / 70% height). The Dock/menu bar are excluded. Maximizing does not enter macOS full-screen mode.
 
@@ -45,6 +47,13 @@ If no SnapSet configuration exists, it imports the older `WindowHarbor/layout.js
 Display choices begin with **Main**, **Extended**, or **Mirrored**, based on macOS display configuration (not which display currently has keyboard focus).
 
 Display UUIDs survive ordinary reconnections, but some dock/adapter changes can change the identity reported by macOS. Re-select the display in that case. The app may constrain its own size or reject window control; results appear below the table. Spaces and Stage Manager can affect window availability. SnapSet does not switch Spaces.
+
+
+## Menu bar and login
+
+SnapSet is a menu-bar utility: its right-side icon opens the controls and **Open SnapSet…** brings up the settings window. It has no separate left-side application menu, Dock icon, or Command–Tab entry. The macOS menu bar itself remains available for other apps.
+
+**Launch at login** is checked by default in the icon's menu. On the first launch from `/Applications` or `~/Applications`, SnapSet registers with macOS using `SMAppService`. The development/build copy shows an installation hint and does not register its temporary location. Unchecking disables login launch, and the preference is remembered. If macOS requires approval or registration fails, the menu shows the status and offers **Open Login Items…**. Changes made in System Settings are respected. Actual login startup still requires a logout/login check after installation; automated builds do not validate that OS flow.
 
 ## Updates
 

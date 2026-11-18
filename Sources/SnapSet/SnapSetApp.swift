@@ -22,17 +22,19 @@ final class Updates: ObservableObject {
 struct SnapSetApp: App {
     @StateObject private var manager = WindowManager()
     @StateObject private var updates = Updates()
+    @StateObject private var login = LoginLaunch()
     var body: some Scene {
         Window("SnapSet", id: "layout") {
             LayoutView(manager: manager, updates: updates).frame(minWidth: 1000, minHeight: 640)
         }.defaultSize(width: 1180, height: 760)
         MenuBarExtra("SnapSet", systemImage: "rectangle.3.group") {
-            MenuContent(manager: manager, updates: updates)
+            MenuContent(login: login, manager: manager, updates: updates)
         }
     }
 }
 
 struct MenuContent: View {
+    @ObservedObject var login: LoginLaunch
     @ObservedObject var manager: WindowManager
     @ObservedObject var updates: Updates
     @Environment(\.openWindow) private var openWindow
@@ -40,10 +42,17 @@ struct MenuContent: View {
         Button("Apply layout") { manager.apply() }.disabled(manager.busy)
         Button("Open SnapSet…") { openWindow(id: "layout"); NSApp.activate(ignoringOtherApps: true) }
         Divider()
+        Toggle("Launch at login", isOn: Binding(get: { login.requested }, set: { login.setEnabled($0) }))
+        if !login.message.isEmpty {
+            Text(login.message)
+            Button("Open Login Items…") { login.openSettings() }
+        }
         Toggle("Apply after display changes", isOn: $manager.configuration.onReconnect)
         Divider()
         Button("Check for Updates…") { updates.check() }.disabled(!updates.canCheck)
         Button("Quit SnapSet") { NSApp.terminate(nil) }.keyboardShortcut("q")
+        Text("Default: Main display · Wide centered")
+            .onAppear { login.refresh() }
     }
 }
 
@@ -67,7 +76,7 @@ struct LayoutView: View {
                 Button("Refresh windows") { manager.refresh() }.disabled(manager.busy)
                 Button("Apply layout") { manager.apply() }
                     .buttonStyle(.borderedProminent).keyboardShortcut(.return, modifiers: [.command])
-                    .disabled(manager.busy || manager.configuration.rules.isEmpty || manager.storageError != nil)
+                    .disabled(manager.busy || manager.storageError != nil)
             }
             if !manager.trusted {
                 HStack {
@@ -82,7 +91,7 @@ struct LayoutView: View {
             }
             TabView(selection: $selectedTab) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Choose a display and placement for each window, then Save. Use Saved rules to edit how a window is recognized next time.")
+                    Text("Default: Main display + Wide centered—no Save needed. Save only exceptions. Layout applies when SnapSet opens or apps launch; use Apply layout to restore it now.")
                         .font(.callout).foregroundStyle(.secondary)
                     if manager.windows.isEmpty {
                         VStack(spacing: 12) {
@@ -107,10 +116,10 @@ struct LayoutView: View {
                     Text(manager.scanStatus).font(.caption).foregroundStyle(.secondary).textSelection(.enabled)
                 }.padding(12).tabItem { Text("Open windows (\(manager.windows.count))") }.tag(0)
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("One rule per window, or explicitly all windows of an app. Ambiguous matches and overlapping rules are skipped. All-app rules use the same rectangle for every window.")
+                    Text("One rule per window, or explicitly all windows of an app. Disabled rules leave matching windows alone. Ambiguous matches and overlapping rules are skipped. All-app rules use the same rectangle for every window.")
                         .font(.callout).foregroundStyle(.secondary)
                     if manager.configuration.rules.isEmpty {
-                        Text("Save a window from the Open windows tab to create your first rule.")
+                        Text("No exceptions saved. All eligible windows use Main display + Wide centered.")
                             .foregroundStyle(.secondary).frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ScrollView {
@@ -127,7 +136,7 @@ struct LayoutView: View {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 7) {
                     Toggle("Apply after displays connect, change, or wake", isOn: $manager.configuration.onReconnect)
-                    Toggle("Apply an app's rules whenever it gains focus", isOn: $manager.configuration.onActivation)
+                    Toggle("Reapply an app's layout whenever it gains focus", isOn: $manager.configuration.onActivation)
                 }
                 Spacer()
                 VStack(alignment: .trailing, spacing: 7) {
@@ -150,12 +159,13 @@ struct LayoutView: View {
 struct LiveWindowControls: View {
     @ObservedObject var manager: WindowManager
     let window: LiveWindow
-    @ViewState<String> private var displayID = ""
+    @ViewState<String> private var displayID = Display.mainTarget
     @ViewState<Placement> private var placement: Placement = .wide
     var body: some View {
         HStack(spacing: 10) {
             Picker("Display", selection: $displayID) {
-                if !manager.displays.contains(where: { $0.id == displayID }) {
+                Text("Main display (follows system)").tag(Display.mainTarget)
+                if displayID != Display.mainTarget && !manager.displays.contains(where: { $0.id == displayID }) {
                     Text(displayID.isEmpty ? "Choose display" : "Saved display (disconnected)").tag(displayID)
                 }
                 ForEach(manager.displays) { Text($0.name).tag($0.id) }
@@ -165,7 +175,7 @@ struct LiveWindowControls: View {
             }.labelsHidden().frame(width: 205)
             Button(manager.rule(for: window) == nil ? "Save" : "Update") {
                 manager.saveWindow(window, displayID: displayID, placement: placement)
-            }.disabled(manager.storageError != nil || !manager.displays.contains(where: { $0.id == displayID }))
+            }.disabled(manager.storageError != nil || (displayID != Display.mainTarget && !manager.displays.contains(where: { $0.id == displayID })))
                 .frame(width: 65)
         }.onAppear { load() }
         .onChange(of: manager.rule(for: window)?.displayID) { _ in load() }
@@ -173,7 +183,7 @@ struct LiveWindowControls: View {
     }
     private func load() {
         let saved = manager.rule(for: window)
-        displayID = saved?.displayID ?? manager.currentDisplay(for: window)
+        displayID = saved?.displayID ?? Display.mainTarget
         placement = saved?.placement ?? .wide
     }
 }
@@ -201,9 +211,10 @@ struct SavedRuleRow: View {
             }
             HStack {
                 Picker("Display", selection: $rule.displayID) {
-                    if !displays.contains(where: { $0.id == rule.displayID }) { Text("\(rule.displayName) (disconnected)").tag(rule.displayID) }
+                    Text("Main display (follows system)").tag(Display.mainTarget)
+                    if rule.displayID != Display.mainTarget && !displays.contains(where: { $0.id == rule.displayID }) { Text("\(rule.displayName) (disconnected)").tag(rule.displayID) }
                     ForEach(displays) { Text($0.name).tag($0.id) }
-                }.onChange(of: rule.displayID) { id in if let display = displays.first(where: { $0.id == id }) { rule.displayName = display.name } }
+                }.onChange(of: rule.displayID) { id in if id == Display.mainTarget { rule.displayName = "Main display" } else if let display = displays.first(where: { $0.id == id }) { rule.displayName = display.name } }
                 Picker("Placement", selection: $rule.placement) { ForEach(Placement.allCases) { Text($0.rawValue).tag($0) } }.frame(width: 290)
             }
             if rule.matchKind != .all && rule.matchValue.trimmingCharacters(in: .whitespaces).isEmpty {
