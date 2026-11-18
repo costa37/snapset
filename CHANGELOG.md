@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.6
+
+- Compact, centered now uses 40% of the usable desktop width and 60% of its height, starting 25% from the left and 20% from the top.
+
 ## 0.3.5
 
 - Reorder the placement menu with Maximized first and Almost maximized last.

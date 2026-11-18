@@ -2,11 +2,11 @@
 
 Put each window back where it belongs. A native Apple silicon macOS app with a table of open windows, saved display/placement rules, a menu-bar action, and automatic restoration after monitors reconnect.
 
-**macOS 13+ · Apple silicon · Version 0.3.5**
+**macOS 13+ · Apple silicon · Version 0.3.6**
 
 ## Install
 
-1. Download `SnapSet-0.3.5-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
+1. Download `SnapSet-0.3.6-arm64.zip` from [Releases](https://github.com/costa37/snapset/releases).
 2. Unzip and move **SnapSet.app** into Applications, then open it.
 3. This personal build is ad-hoc signed and not Apple-notarized. If macOS blocks it, review System Settings → Privacy & Security and use **Open Anyway** only if you trust the download. Managed Macs may prohibit it.
 4. Click **Enable access…** and enable SnapSet in Privacy & Security → Accessibility. Return to SnapSet and click **Refresh windows**. If needed, quit and reopen the app.

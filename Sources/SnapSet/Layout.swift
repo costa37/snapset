@@ -20,7 +20,15 @@ enum Placement: String, Codable, CaseIterable, Identifiable {
         case .left: return CGRect(x: inset.minX, y: inset.minY, width: (inset.width - 12) / 2, height: inset.height)
         case .right: return CGRect(x: inset.midX + 6, y: inset.minY, width: (inset.width - 12) / 2, height: inset.height)
         case .center: return CGRect(x: area.minX + area.width * 0.25, y: inset.minY, width: area.width * 0.5, height: inset.height)
-        case .compact: return CGRect(x: area.minX + area.width * 0.2, y: area.minY + area.height * 0.15, width: area.width * 0.6, height: area.height * 0.7)
+        case .compact:
+            let width = area.width * 0.40
+            let height = area.height * 0.60
+            return CGRect(
+                x: area.minX + area.width * 0.25,
+                y: area.maxY - area.height * 0.20 - height,
+                width: width,
+                height: height
+            )
         }
     }
 }
