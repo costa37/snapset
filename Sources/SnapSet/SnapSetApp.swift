@@ -4,6 +4,7 @@ import Sparkle
 
 // Select the property-wrapper type even on SDKs that also expose a State macro.
 typealias ViewState<Value> = SwiftUI.State<Value>
+typealias ViewFocus<Value: Hashable> = SwiftUI.FocusState<Value>
 
 final class Updates: ObservableObject {
     let controller: SPUStandardUpdaterController
@@ -29,6 +30,7 @@ struct LayoutView: View {
     @ObservedObject var updates: Updates
     @ViewState<Int> private var selectedTab = 0
     @ViewState<String> private var appSearch = ""
+    @ViewFocus<Bool> private var searchFocused
     private var searchTerm: String { appSearch.trimmingCharacters(in: .whitespacesAndNewlines) }
     private func matchesApp(_ name: String) -> Bool {
         searchTerm.isEmpty || name.localizedCaseInsensitiveContains(searchTerm)
@@ -77,9 +79,11 @@ struct LayoutView: View {
             }
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(.secondary)
-                TextField("Search apps by any part of their name…", text: $appSearch)
+                TextField("/ to filter apps", text: $appSearch)
                     .textFieldStyle(.plain)
                     .accessibilityLabel("Search apps")
+                    .focused($searchFocused)
+                    .help("Press / to focus search when not editing text.")
                 if !appSearch.isEmpty {
                     Button { appSearch = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
                         .buttonStyle(.plain).help("Clear search").accessibilityLabel("Clear search")
@@ -156,6 +160,7 @@ struct LayoutView: View {
             Text("Settings stay on this Mac. Disconnected displays and full-screen/minimized windows are skipped. Some apps do not expose all windows to Accessibility.")
                 .font(.caption).foregroundStyle(.secondary)
         }.padding(22)
+            .background(SearchShortcut { searchFocused = true }.frame(width: 0, height: 0))
     }
 }
 

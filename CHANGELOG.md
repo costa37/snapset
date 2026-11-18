@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3
+
+- Press / in the SnapSet settings window to focus app search; the shortcut is shown in the search placeholder.
+- Preserve normal slash typing in search, document paths, and other editable fields. The shortcut is local to SnapSet.
+
 ## 0.3.2
 
 - Add an app-name search box shared by Open windows and Saved rules.
